@@ -362,14 +362,14 @@ class QLearningAgent(ReinforcementLearningAgent):
 
     def update(self, state, action, next_state, reward):
 
-        features = checkers_features(state, action)
+        features = self.feature_func(state, action)
 
         expected = reward + self.gamma * self.compute_value_from_q_values(next_state)
         current = self.get_q_value(state, action, features)
 
         temporal_difference = expected - current
 
-        for i in range(CHECKERS_FEATURE_COUNT):
+        for i in range(self.feature_count):
             self.weights[i] = self.weights[i] + self.alpha * (temporal_difference) * features[i]
 
 
@@ -428,7 +428,7 @@ class QLearningAgent(ReinforcementLearningAgent):
 
 #         temporal_difference = expected - current
 
-#         for i in range(CHECKERS_FEATURE_COUNT):
+#         for i in range(self.feature_count):
 #             self.weights[i] = self.weights[i] + self.alpha * (temporal_difference) * features[i]
 
 
