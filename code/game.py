@@ -463,7 +463,7 @@ def checkers_features_augmented(state, action):
     
 
     
-    features = []
+    features = [1]
 
 
     # pawns and kings of agent and opponent in current state
@@ -591,7 +591,7 @@ def checkers_features_simple(state, action):
 #         else:back_row_bridge = 0
     
 
-    features = []
+    features = [1]
 
 
     # pawns and kings of agent and opponent in current state
