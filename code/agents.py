@@ -62,8 +62,9 @@ class RandomAgent(Agent):
 class AlphaBetaAgent(Agent):
 
     def __init__(self, depth):
-        Agent.__init__(self, is_learning_agent=False)
+        Agent.__init__(self, is_learning_agent=False, reward_direction=1)
         self.depth = depth
+        self.reward_direction = reward_direction
 
     def evaluation_function(self, state, agent=True):
         """
@@ -78,16 +79,16 @@ class AlphaBetaAgent(Agent):
 
         if state.is_game_over():
             if agent and state.is_first_agent_win():
-                return 500
+                return 500*self.reward_direction
 
             if not agent and state.is_second_agent_win():
-                return 500
+                return 500*self.reward_direction
 
-            return -500
+            return -500*self.reward_direction
 
         pieces_and_kings = state.get_pieces_and_kings()
-        return pieces_and_kings[agent_ind] + 2 * pieces_and_kings[agent_ind + 2] - \
-        (pieces_and_kings[other_ind] + 2 * pieces_and_kings[other_ind + 2])
+        return (pieces_and_kings[agent_ind] + 2 * pieces_and_kings[agent_ind + 2] - \
+        (pieces_and_kings[other_ind] + 2 * pieces_and_kings[other_ind + 2]))*self.reward_direction
 
     def get_action(self, state):
 
@@ -158,10 +159,11 @@ class AlphaBetaAgent(Agent):
 
 class ReinforcementLearningAgent(Agent):
 
-    def __init__(self, is_learning_agent=True):
+    def __init__(self, is_learning_agent=True, reward_function=checkers_reward):
         Agent.__init__(self, is_learning_agent)
 
         self.episodes_so_far = 0
+        self.reward_function = reward_function
 
 
     @abstractmethod
@@ -221,10 +223,10 @@ class ReinforcementLearningAgent(Agent):
         pass
 
 
-    # TODO
-    def reward_function(self, state, action, next_state):
-        # make a reward function for the environment
-        return checkers_reward(state, action, next_state)
+#     # TODO
+#     def reward_function(self, state, action, next_state):
+#         # make a reward function for the environment
+#         return checkers_reward(state, action, next_state)
 
 
     def do_action(self, state, action):
@@ -237,7 +239,7 @@ class ReinforcementLearningAgent(Agent):
 
 class QLearningAgent(ReinforcementLearningAgent):
 
-    def __init__(self, feature_func=checkers_features_augmented, feature_count=33, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
+    def __init__(self, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
 
         """
         alpha: learning rate
@@ -247,7 +249,7 @@ class QLearningAgent(ReinforcementLearningAgent):
         weights: default weights
         """
 
-        ReinforcementLearningAgent.__init__(self, is_learning_agent=is_learning_agent)
+        ReinforcementLearningAgent.__init__(self, is_learning_agent=is_learning_agent, reward_function=reward_function)
 
         self.original_alpha = alpha
         self.original_epsilon = epsilon
@@ -407,9 +409,9 @@ class QLearningAgent(ReinforcementLearningAgent):
 
 # class SarsaLearningAgent(QLearningAgent):
 
-#     def __init__(self, feature_func=checkers_features_augmented, feature_count=33, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
+#     def __init__(self, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
         
-#         QLearningAgent.__init__(self, feature_func, feature_count,alpha, gamma, epsilon, is_learning_agent, weights)
+#         QLearningAgent.__init__(self, feature_func, feature_count,reward_function,alpha, gamma, epsilon, is_learning_agent, weights)
 
 
 #     def update(self, state, action, next_state, next_action, reward):
@@ -456,8 +458,8 @@ class QLearningAgent(ReinforcementLearningAgent):
 
 # class SarsaSoftmaxAgent(SarsaLearningAgent):
 
-#     def __init__(self, feature_func=checkers_features_augmented, feature_count=33, alpha=0.01, gamma=0.1, t=1.0, is_learning_agent=True, weights=None):
-#         SarsaLearningAgent.__init__(self, feature_func=feature_func, feature_count=feature_count, alpha=alpha, gamma=gamma,
+#     def __init__(self, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, t=1.0, is_learning_agent=True, weights=None):
+#         SarsaLearningAgent.__init__(self, feature_func=feature_func, feature_count=feature_count, reward_function=reward_function, alpha=alpha, gamma=gamma,
 #             is_learning_agent=is_learning_agent, weights=weights)
 
 #         self.t = t
