@@ -5,7 +5,7 @@ This file contains various helper methods.
 
 import random
 from pathlib import Path
-import numpy as np
+from autograd import numpy as np
 
 def flip_coin(prob):
 	return random.random() < prob
