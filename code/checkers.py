@@ -15,7 +15,7 @@ from util import open_file, load_weights
 from game import *
 from agents import *
 
-import numpy as np
+from autograd import numpy as np
 
 # number of weights to remember
 NUM_WEIGHTS_REM = 5
