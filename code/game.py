@@ -7,7 +7,7 @@ methods to run a single game.
 import math
 import copy
 from functools import reduce
-import numpy as np
+from autograd import numpy as np
 
 
 CHECKERS_FEATURE_COUNT = 33
@@ -547,49 +547,6 @@ def checkers_features_simple(state, action):
     oppn_kings_n = num_pieces_list_n[oppn_ind + 2]
     oppn_pieces_n = oppn_pawns_n + oppn_kings_n
     
-#     # post-move board features
-#     agent_sym = state.board.P1 if state.is_first_agent_turn() else state.board.P2
-#     oppn_sym = state.board.P2 if state.is_first_agent_turn() else state.board.P1
-#     agent_king_sym = state.board.P1_K if state.is_first_agent_turn() else state.board.P2_K
-#     oppn_king_sym = state.board.P2_K if state.is_first_agent_turn() else state.board.P1_K
-    
-#     post_action_spots = np.array(next_state.board.spots)
-    
-#     # num of pieces in edge or center
-#     num_agent_pawns_edge = np.sum(post_action_spots[:,[0,-1]]==agent_sym)
-#     num_agent_kings_edge = np.sum(post_action_spots[:,[0,-1]]==agent_king_sym)
-#     num_oppn_pawns_edge = np.sum(post_action_spots[:,[0,-1]]==oppn_sym)
-#     num_oppn_kings_edge = np.sum(post_action_spots[:,[0,-1]]==oppn_king_sym)
-    
-#     num_agent_pawns_center = agent_pawns_n - num_agent_pawns_edge
-#     num_agent_kings_center = agent_kings_n - num_agent_kings_edge
-#     num_oppn_pawns_center = oppn_pawns_n - num_oppn_pawns_edge
-#     num_oppn_kings_center = oppn_kings_n - num_oppn_kings_edge
-    
-#     # next state (from opponent's point of view)
-#     next_state_oppn = state.generate_successor(action, True)
-    
-#     # veritcal centroids location
-#     if len(next_state.board.get_piece_locations()) != 0:
-#         agent_vert_center_loc = np.mean(np.array(next_state.board.get_piece_locations())[:,0]).round()
-#     else: agent_vert_center_loc = -1
-        
-#     if len(next_state_oppn.board.get_piece_locations()) != 0:
-#         oppn_vert_center_loc = np.mean(np.array(next_state_oppn.board.get_piece_locations())[:,0]).round()
-#     else: oppn_vert_center_loc = -1
-        
-#     # back row bridge
-#     if state.is_first_agent_turn():
-#         if ((post_action_spots[0,1]==agent_sym) or (post_action_spots[0,1]==agent_king_sym)) and \
-#         ((post_action_spots[0,3]==agent_sym) or (post_action_spots[0,3]==agent_king_sym)):
-#             back_row_bridge = 1
-#         else:back_row_bridge = 0
-#     else:
-#         if ((post_action_spots[-1,0]==agent_sym) or (post_action_spots[-1,0]==agent_king_sym)) and \
-#         ((post_action_spots[-1,2]==agent_sym) or (post_action_spots[-1,2]==agent_king_sym)):
-#             back_row_bridge = 1
-#         else:back_row_bridge = 0
-    
 
     features = [1]
 
@@ -610,15 +567,35 @@ def checkers_features_simple(state, action):
 
     features.append(next_state.num_attacks())
     
-#     # new features
-#     features.append(next_state_oppn.num_attacks())
-#     features.extend([num_agent_pawns_edge,num_agent_kings_edge,num_oppn_pawns_edge,num_oppn_kings_edge,
-#                      num_agent_pawns_center,num_agent_kings_center,num_oppn_pawns_center,num_oppn_kings_center,
-#                      agent_vert_center_loc,oppn_vert_center_loc,back_row_bridge])
-
-    # print(features)
     return features
 
+
+def raw_board_features(state, action):
+    next_state = state.generate_successor(action, False)
+    next_state_spots = np.array(next_state.board.spots)
+    
+    # flip the board position if it's second agent's turn
+    if not state.is_first_agent_turn():
+        next_state_spots = np.flipud(np.fliplr(next_state_spots))
+    features = np.zeros(next_state.board.WIDTH * next_state.board.HEIGHT)
+    
+    agent_sym = state.board.P1 if state.is_first_agent_turn() else state.board.P2
+    oppn_sym = state.board.P2 if state.is_first_agent_turn() else state.board.P1
+    agent_king_sym = state.board.P1_K if state.is_first_agent_turn() else state.board.P2_K
+    oppn_king_sym = state.board.P2_K if state.is_first_agent_turn() else state.board.P1_K
+
+    linear_spots = np.array(next_state_spots).flatten()
+    features[linear_spots==agent_sym] = 1
+    features[linear_spots==agent_king_sym] = 3
+    features[linear_spots==oppn_sym] = -1
+    features[linear_spots==oppn_king_sym] = -3
+    
+    return features
+
+def combined_features(state, action):
+    extracted_features = np.array(checkers_features_augmented(state, action)).flatten()[1:]
+    raw_features = raw_board_features(state, action)
+    return np.concatenate((extracted_features,raw_features),axis=0)
 
 
 def checkers_reward(state, action, next_state):
@@ -662,6 +639,30 @@ def checkers_reward(state, action, next_state):
     return reward
 
 
+def raw_reward(state, action, next_state):
+    if next_state.max_moves_done:
+        return 0
+    elif next_state.is_game_over():
+        # infer turn from current state, because at the end same state is used by both agents
+        if state.is_first_agent_turn():
+            return WIN_REWARD if next_state.is_first_agent_win() else LOSE_REWARD
+        else:
+            return WIN_REWARD if next_state.is_second_agent_win() else LOSE_REWARD
+    else: return LIVING_REWARD
+
+
+def raw_reward2(state, action, next_state):
+#     if next_state.max_moves_done:
+#         return 0
+    if next_state.is_game_over():
+        # infer turn from current state, because at the end same state is used by both agents
+        if state.is_first_agent_turn():
+            return WIN_REWARD if next_state.is_first_agent_win() else LOSE_REWARD
+        else:
+            return WIN_REWARD if next_state.is_second_agent_win() else LOSE_REWARD
+    else: return LIVING_REWARD
+
+       
 class Game:
     """
     A class to control a game by asking for actions from agents while following game rules.
@@ -681,7 +682,7 @@ class Game:
         self.rules = rules
 
 
-    def run(self):
+    def run(self, random_prob = 0.):
 
         quiet = self.rules.quiet
         game_state = self.game_state
@@ -721,22 +722,31 @@ class Game:
             if action is None:
                 action = active_agent.get_action(game_state)
 
+            # If the environment is stochastic, select random legal action to replace the action from the agent
+            if random_prob > 0:
+                if bool(np.random.uniform() < random_prob):
+                    possible_moves = game_state.board.get_possible_next_moves()
+                    action = possible_moves[np.random.choice(len(possible_moves),size=1)[0]]
+
             next_game_state = game_state.generate_successor(action)
             self.game_state = next_game_state
 
             game_state = self.game_state
 
             num_moves += 1
+#             print('First agent reward =', active_agent.episode_rewards)
             # input()
 
         if num_moves >= self.rules.max_moves:
             game_state.set_max_moves_done()
-
+            
+        
         # after the game is over, tell learning agents to learn accordingly
 
         # inform learning agents about new episode end
         for learning_agent in learning_agents:
             learning_agent.observation_function(game_state)
+#             print('First agent reward =', learning_agent.episode_rewards)
             learning_agent.stop_episode()
 
         # game_state.print_board()
