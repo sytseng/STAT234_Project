@@ -473,7 +473,7 @@ class SarsaLearningAgent(QLearningAgent):
             self.prev_prev_action = self.prev_action
             action = self.get_action(state)
             self.observe_transition(self.prev_prev_state, self.prev_prev_action, self.prev_state, self.prev_action, reward)
-
+ 
             return action
 
 

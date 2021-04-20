@@ -33,7 +33,7 @@ class GameState:
     """
 
 
-    def __init__(self, prev_state=None, the_player_turn=True):
+    def __init__(self, prev_state=None, the_player_turn=True, reverse=False):
         """
         prev_state: an instance of GameState or None
         """
@@ -45,6 +45,7 @@ class GameState:
 
         self.board = Board(prev_spots, the_player_turn)
         self.max_moves_done = False
+        self.reverse = reverse
 
     def get_num_agents(self):
         return 2
@@ -65,7 +66,7 @@ class GameState:
         Returns: a new state without any changes to current state
         """
 
-        successor_state = GameState(self, self.board.player_turn)
+        successor_state = GameState(self, self.board.player_turn, reverse=self.reverse)
         successor_state.board.make_move(action, switch_player_turn)
 
         return successor_state
@@ -92,10 +93,18 @@ class GameState:
         if self.max_moves_done:
             return False
 
-        if not self.is_game_over() or self.is_first_agent_turn():
-            return False
+        if not self.reverse:
+            if not self.is_game_over() or self.is_first_agent_turn():
+                return False
 
-        return True
+            return True
+        
+        elif self.reverse:
+            if not self.is_game_over() or not self.is_first_agent_turn():
+                return False
+
+            return True
+
 
     def is_second_agent_win(self):
         """
@@ -106,11 +115,18 @@ class GameState:
         if self.max_moves_done:
             return False
 
-        if not self.is_game_over() or not self.is_first_agent_turn():
-            return False
+        if not self.reverse:
+            if not self.is_game_over() or not self.is_first_agent_turn():
+                return False
 
-        return True
+            return True
+        
+        elif self.reverse:
+            if not self.is_game_over() or self.is_first_agent_turn():
+                return False
 
+            return True
+ 
 
     def print_board(self):
         self.board.print_board()
@@ -192,9 +208,9 @@ class ClassicGameRules:
         self.max_moves = max_moves
         self.quiet = False
 
-    def new_game(self, first_agent, second_agent, first_agent_turn, quiet=False):
-        init_state = GameState(the_player_turn=first_agent_turn)
-
+    def new_game(self, first_agent, second_agent, first_agent_turn, quiet=False, reverse=False):
+        init_state = GameState(the_player_turn=first_agent_turn, reverse=reverse)
+        self.reverse = reverse
         self.quiet = quiet
         game = Game(first_agent, second_agent, init_state, self)
 
