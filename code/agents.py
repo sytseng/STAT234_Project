@@ -81,12 +81,12 @@ class AlphaBetaAgent(Agent):
 
         if state.is_game_over():
             if agent and state.is_first_agent_win():
-                return 500*self.reward_direction
+                return 500
 
             if not agent and state.is_second_agent_win():
-                return 500*self.reward_direction
+                return 500
 
-            return -500*self.reward_direction
+            return -500
 
         pieces_and_kings = state.get_pieces_and_kings()
         return (pieces_and_kings[agent_ind] + 2 * pieces_and_kings[agent_ind + 2] - \
@@ -166,6 +166,8 @@ class ReinforcementLearningAgent(Agent):
 
         self.episodes_so_far = 0
         self.reward_function = reward_function
+        self.episode_td_history = []
+        self.episode_reward_history = []
 
 
     @abstractmethod
@@ -199,11 +201,12 @@ class ReinforcementLearningAgent(Agent):
         self.prev_action = None
 
         self.episode_rewards = 0.0
+        self.temporal_difference = []
 
 
     def stop_episode(self):
-        # print('reward this episode', self.episode_rewards)
-        pass
+        self.episode_reward_history.append(self.episode_rewards)
+        self.episode_td_history.append(np.array(self.temporal_difference.copy()).mean())
 
     @abstractmethod
     def start_learning(self):
@@ -372,6 +375,7 @@ class QLearningAgent(ReinforcementLearningAgent):
         current = self.get_q_value(state, action, features)
 
         temporal_difference = expected - current
+        self.temporal_difference.append(temporal_difference)
 
         for i in range(self.feature_count):
             self.weights[i] = self.weights[i] + self.alpha * (temporal_difference) * features[i]
@@ -424,6 +428,7 @@ class SarsaLearningAgent(QLearningAgent):
         self.prev_prev_action = None
         
         self.episode_rewards = 0.0
+        self.temporal_difference = []
 
     def update(self, state, action, next_state, next_action, reward):
 
@@ -440,6 +445,7 @@ class SarsaLearningAgent(QLearningAgent):
         current = self.get_q_value(state, action, features)
 
         temporal_difference = expected - current
+        self.temporal_difference.append(temporal_difference)
 
         for i in range(self.feature_count):
             self.weights[i] = self.weights[i] + self.alpha * (temporal_difference) * features[i]
@@ -530,6 +536,7 @@ class SarsaLambdaAgent(SarsaLearningAgent):
         
         self.episode_rewards = 0.0
         self.step_count = 0
+        self.temporal_difference = []
         
     
     def update(self, state, action, next_state, next_action, reward):
@@ -546,6 +553,7 @@ class SarsaLambdaAgent(SarsaLearningAgent):
         Q_prime = self.get_q_value(next_state, next_action, x_prime)
         
         delta = reward + self.gamma * Q_prime - Q
+        self.temporal_difference.append(delta)
         self.z = self.gamma * self.lam * self.z \
                  + (1. - self.alpha * self.gamma * self.lam * np.dot(self.z.T, self.x)) * self.x
         self.weights = (self.weights.reshape(-1,1) + self.alpha * (delta + Q - self.Q_old) * self.z \
@@ -733,6 +741,7 @@ class QLearningAgent_MLP(ReinforcementLearningAgent):
 #         self.nn.fit(features, np.array([expected]), self.params)
 
         temporal_difference = expected - current
+        self.temporal_difference.append(temporal_difference)
         this_grad = self.grad_q_value(features)(self.nn.weights).reshape(1,-1)
         this_grad[~np.isfinite(this_grad)] = 0.
 
@@ -790,6 +799,7 @@ class SarsaLearningAgent_MLP(QLearningAgent_MLP):
         self.prev_prev_action = None
         
         self.episode_rewards = 0.0
+        self.temporal_difference = []
 
     def update(self, state, action, next_state, next_action, reward):
 
@@ -806,6 +816,7 @@ class SarsaLearningAgent_MLP(QLearningAgent_MLP):
         current = self.get_q_value(state, action)
 
         temporal_difference = expected - current
+        self.temporal_difference.append(temporal_difference)
 
         this_grad = self.grad_q_value(features)(self.nn.weights).reshape(1,-1)
         this_grad[~np.isfinite(this_grad)] = 0.
