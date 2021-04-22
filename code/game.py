@@ -662,7 +662,48 @@ def raw_reward2(state, action, next_state):
             return WIN_REWARD if next_state.is_second_agent_win() else LOSE_REWARD
     else: return LIVING_REWARD
 
-       
+
+def reverse_checkers_reward(state, action, next_state):
+
+    if next_state.is_game_over():
+        # infer turn from current state, because at the end same state is used by both agents
+        if state.is_first_agent_turn():
+            return WIN_REWARD if next_state.is_first_agent_win() else LOSE_REWARD
+        else:
+            return WIN_REWARD if next_state.is_second_agent_win() else LOSE_REWARD
+
+    agent_ind = 0 if state.is_first_agent_turn() else 1
+    oppn_ind = 1 if state.is_first_agent_turn() else 0
+
+    num_pieces_list = state.get_pieces_and_kings()
+
+    agent_pawns = num_pieces_list[agent_ind]
+    agent_kings = num_pieces_list[agent_ind + 2]
+
+    oppn_pawns = num_pieces_list[oppn_ind]
+    oppn_kings = num_pieces_list[oppn_ind + 2]
+
+    num_pieces_list_n = next_state.get_pieces_and_kings()
+
+    agent_pawns_n = num_pieces_list_n[agent_ind]
+    agent_kings_n = num_pieces_list_n[agent_ind + 2]
+
+    oppn_pawns_n = num_pieces_list_n[oppn_ind]
+    oppn_kings_n = num_pieces_list_n[oppn_ind + 2]
+
+    r_1 = agent_pawns - agent_pawns_n
+    r_2 = agent_kings - agent_kings_n
+    r_3 = oppn_pawns - oppn_pawns_n
+    r_4 = oppn_kings - oppn_kings_n
+
+    reward = -(r_3 * 0.2 + r_4 * 0.3 + r_1 * (-0.4) + r_2 * (-0.5))
+
+    if reward == 0:
+        reward = LIVING_REWARD
+
+    return reward
+
+
 class Game:
     """
     A class to control a game by asking for actions from agents while following game rules.
