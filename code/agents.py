@@ -591,7 +591,7 @@ class SarsaLambdaAgent(SarsaLearningAgent):
 
 class QLearningAgent_MLP(ReinforcementLearningAgent):
 
-    def __init__(self, architecture, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
+    def __init__(self, architecture, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None, random=None):
 
         """
         alpha: learning rate
@@ -616,6 +616,11 @@ class QLearningAgent_MLP(ReinforcementLearningAgent):
         self.architecture = architecture
         self.architecture['input_dim'] = feature_count
         
+        if random is not None:
+            self.random = random
+        else:
+            self.random = np.random.RandomState(0)
+        
         self.params = {
             'step_size':1e-3,
             'max_iteration':1,
@@ -629,7 +634,7 @@ class QLearningAgent_MLP(ReinforcementLearningAgent):
 
         if weights is None:
             # initialize weights for the features
-            self.nn = MLP(architecture)
+            self.nn = MLP(architecture, random=self.random)
         else:
             self.nn = MLP(architecture, weights = weights)
 
@@ -786,9 +791,9 @@ class QLearningAgent_MLP(ReinforcementLearningAgent):
 
 class SarsaLearningAgent_MLP(QLearningAgent_MLP):
 
-    def __init__(self, architecture, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None):
+    def __init__(self, architecture, feature_func=checkers_features_augmented, feature_count=34, reward_function=checkers_reward, alpha=0.01, gamma=0.1, epsilon=0.5, is_learning_agent=True, weights=None, random=None):
         
-        QLearningAgent_MLP.__init__(self, architecture, feature_func, feature_count,reward_function,alpha, gamma, epsilon, is_learning_agent, weights)
+        QLearningAgent_MLP.__init__(self, architecture, feature_func, feature_count,reward_function,alpha, gamma, epsilon, is_learning_agent, weights, random)
     
     def start_episode(self):
         # Accumulate rewards while training for each episode and show total rewards 
