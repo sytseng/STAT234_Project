@@ -1,7 +1,7 @@
 ## STAT234_Project_Spring_2021
 This is the repository for Harvard STAT234 - Sequential Decision Making in Spring 2021. 
 
-## Team member
+## Team Members
 * Shih-Yi Tseng
 * Laurence Calancea
 
